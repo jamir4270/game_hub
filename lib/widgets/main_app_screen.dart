@@ -64,7 +64,7 @@ class _MyHomePageState extends State<MyHomePage> {
   bool _isAdmin = false;
   int _selectedIndex = 0;
   late Widget _signingScreen;
-  late Widget_loadingScreen = SizedBox();
+  late Widget _loadingScreen = SizedBox();
   late Widget _dashboardScreen = Container();
   late Widget _currentScreen;
 

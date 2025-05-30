@@ -73,9 +73,6 @@ class Account {
 
   @override
   String toString() {
-    return '{"uuid": "$uuid", "api_id": "$apiId", "user_level": $userLevel, "api_name": "$apiName",
-    "api_email": "$apiEmail", "api_photo_url": "$apiPhotoUrl", "is_signed_in": $isSignedIn, "is_public": $isPublic,
-    "is_contributor_mode": $isContributorMode, "is_restricted": $isRestricted, "is_synchronized": $isSynchronized,
-    "ttl": "$ttl", "created_at": "$createdAt"}';
+    return '{"uuid": "$uuid", "api_id": "$apiId", "user_level": $userLevel, "api_name": "$apiName", "api_email": "$apiEmail", "api_photo_url": "$apiPhotoUrl", "is_signed_in": $isSignedIn, "is_public": $isPublic, "is_contributor_mode": $isContributorMode, "is_restricted": $isRestricted, "is_synchronized": $isSynchronized, "ttl": "$ttl", "created_at": "$createdAt"}';
 }
 }

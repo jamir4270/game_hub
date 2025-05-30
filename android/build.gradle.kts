@@ -9,14 +9,16 @@ allprojects {
     }
 }
 
-rootProject.buildDir "../build"
+rootProject.buildDir = "../build"
+
 subprojects {
-    project.buildDir "${rootProject.buildDir}/${project.name}"
+    project.buildDir = "${rootProject.buildDir}/${project.name}"
 }
+
 subprojects {
     project.evaluationDependsOn(":app")
 }
 
-tasks.register("clean", Delete) {
+task clean(type: Delete) {
     delete rootProject.buildDir
 }

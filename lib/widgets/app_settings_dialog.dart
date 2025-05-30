@@ -11,7 +11,7 @@ class AppSettingsDialog extends StatelessWidget {
   final Color themeMain;
   final Color themeLite;
   final bool keepScreenOn;
-  final bool enlargements;
+  final bool useLargeTexts;
   final ValueChanged<bool>? onKeepScreenOnChanged;
   final ValueChanged<bool>? onUseLargeTextsChanged;
   final VoidCallback? onSignOutTap;
@@ -32,7 +32,6 @@ class AppSettingsDialog extends StatelessWidget {
     this.onKeepScreenOnChanged,
     this.onUseLargeTextsChanged,
     this.onSignOutTap,
-    this.enlargements,
   });
 
   static const double _dialogBorderRadius = 8.0;
