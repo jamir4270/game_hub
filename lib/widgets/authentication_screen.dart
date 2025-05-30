@@ -11,8 +11,10 @@ import '../models/account.dart';
 
 class AuthenticationScreen extends StatefulWidget {
   final VoidCallback? onSignedIn;
+  final VoidCallback? onLoginStart;
+  final VoidCallback? onLoginFailed;
 
-  const AuthenticationScreen({super.key, this.onSignedIn});
+  const AuthenticationScreen({super.key, this.onSignedIn, this.onLoginStart, this.onLoginFailed});
 
   @override
   AuthenticationScreenState createState() => AuthenticationScreenState();
@@ -48,6 +50,7 @@ class AuthenticationScreenState extends State<AuthenticationScreen> {
   Future<void> authorizeEmail(String tempUsername, String tempPassword) async {
     if (lastLoginClicked >= DateTime.now().millisecondsSinceEpoch - globalDelay) return;
 
+    widget.onLoginStart?.call();
     setState(() {
       userLevel = -1;
       _isLoading = true;
@@ -75,7 +78,7 @@ class AuthenticationScreenState extends State<AuthenticationScreen> {
           _isLoading = false;
           _retries++;
         });
-
+        widget.onLoginFailed?.call();
         if (_retries >= 3) {
           _showToast("Too many attempts, please try again later.");
           setState(() => _isPaused = true);
@@ -88,6 +91,7 @@ class AuthenticationScreenState extends State<AuthenticationScreen> {
         _retries++;
         _isLoading = false;
       });
+      widget.onLoginFailed?.call();
       return;
     }
 
