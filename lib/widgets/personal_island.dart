@@ -62,7 +62,11 @@ class PersonalIsland extends StatelessWidget {
                     ),
                   ),
                 ],
-              )
+              ),
+              IconButton(
+                icon: const Icon(Icons.settings),
+                onPressed: onAppSettingsTap,
+              ),
             ],
           ),
         ),

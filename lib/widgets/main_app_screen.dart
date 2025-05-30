@@ -1,31 +1,71 @@
 import 'dart:io';
 import 'package:uuid/uuid.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/services.dart';
 
 import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../widgets/loading_screen.dart';
 import '../widgets/personal_island.dart';
-import '../widgets/app_settings_dialog.dart';
 import '../widgets/custom_bottom_nav_bar.dart';
 import 'authentication_screen.dart';
+import 'settings_page.dart';
 
 import '../services/database.dart';
 import '../models/account.dart';
+import '../models/game.dart';
+import '../models/user_game.dart';
+import 'home_page.dart';
+import 'game_page.dart';
+import 'profile_page.dart';
 
 void main() => runApp(const MyApp());
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  bool _darkMode = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTheme();
+  }
+
+  Future<void> _loadTheme() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _darkMode = prefs.getBool('darkMode') ?? false;
+    });
+  }
+
+  void _setDarkMode(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('darkMode', value);
+    setState(() {
+      _darkMode = value;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Loqosaurus',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.green, brightness: Brightness.light),
         useMaterial3: true,
       ),
+      darkTheme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.green, brightness: Brightness.dark),
+        useMaterial3: true,
+      ),
+      themeMode: _darkMode ? ThemeMode.dark : ThemeMode.light,
       home: const MyHomePage(title: 'For the smart people.'),
       debugShowCheckedModeBanner: false,
     );
@@ -33,8 +73,8 @@ class MyApp extends StatelessWidget {
 }
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
+  final void Function()? onOpenSettings;
+  const MyHomePage({super.key, required this.title, this.onOpenSettings});
   final String title;
 
   @override
@@ -75,10 +115,43 @@ class _MyHomePageState extends State<MyHomePage> {
   String _apiEmail = '';
   String _fullName = '';
 
+  List<Game> _games = [];
+  Map<int, UserGame> _userGames = {};
+  String _userId = 'demo_user'; // TODO: Replace with real user id from account
+
+  bool _darkMode = false;
+
   @override
   void initState() {
     super.initState();
+    _loadPrefs();
     _initializeRequirements();
+    _populateAndLoadGames();
+  }
+
+  Future<void> _loadPrefs() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _darkMode = prefs.getBool('darkMode') ?? false;
+    });
+  }
+
+  Future<void> _setDarkMode(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('darkMode', value);
+    setState(() {
+      _darkMode = value;
+    });
+  }
+
+  Future<void> _setLastUserId(String uuid) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('lastUserId', uuid);
+  }
+
+  Future<String?> _getLastUserId() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('lastUserId');
   }
 
   // UI methods
@@ -91,52 +164,45 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void _handleAppSettingsTap() {
-    showDialog(
-        context: context,
-        builder: (BuildContext context) {
-      return AppSettingsDialog(
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (context) => SettingsPage(
         netImgLg: _netImgLg,
         apiName: _fullName,
         apiEmail: _apiEmail,
         headLine2: _headLine2,
         body: _body,
-        themeBG: _themeBG,
+        themeBG: _darkMode ? Colors.black : _themeBG,
         themeGrey: _themeGrey,
         themeMain: _themeMain,
         themeLite: _themeLite,
         keepScreenOn: _keepScreenOn,
         useLargeTexts: _useLargeTexts,
+        darkMode: _darkMode,
+        onDarkModeChanged: _setDarkMode,
         onKeepScreenOnChanged: (newValue) {
           setState(() {
             _keepScreenOn = newValue;
           });
           WakelockPlus.toggle(enable: _keepScreenOn);
-          Navigator.of(context).pop();
-          _handleAppSettingsTap();
-          _buildHomePage();
         },
         onUseLargeTextsChanged: (newValue) {
           setState(() {
             _useLargeTexts = newValue;
           });
           _rescaleFontSizes();
-          Navigator.of(context).pop();
-          _handleAppSettingsTap();
-          _buildHomePage();
         },
-        onSignOutTap: () {
-          Navigator.of(context).pop();
-          DatabaseService().clearAccounts().then((_) {
-            setState(() {
-              _isSignedIn = false;
-              _selectedIndex = 0;
-            });
-            _buildHomePage();
+        onSignOutTap: () async {
+          await DatabaseService().clearAccounts();
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.remove('lastUserId');
+          setState(() {
+            _isSignedIn = false;
+            _selectedIndex = 0;
           });
+          SystemNavigator.pop();
         },
-      );
-    },
-    );
+      ),
+    ));
   }
 
   Future<void> _rescaleFontSizes() async {
@@ -323,23 +389,81 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Future<void> _checkSignedAccount() async {
     final accounts = await DatabaseService().getSignedAccount();
-
     if (accounts.isEmpty) {
+      // Try auto-login from prefs
+      final lastUserId = await _getLastUserId();
+      if (lastUserId != null) {
+        final accs = await DatabaseService().getAccount(lastUserId);
+        if (accs.isNotEmpty) {
+          final acc = accs.first;
+          acc.isSignedIn = 1;
+          await DatabaseService().updateAccount(acc);
+          await _setLastUserId(acc.uuid);
+          setState(() {
+            _signedAccount = acc;
+            _userId = acc.uuid;
+            _fullName = acc.apiName!;
+            _apiEmail = acc.apiEmail!;
+            _apiPhotoUrl = acc.apiPhotoUrl!;
+            _isAdmin = (acc.userLevel! >= 2);
+            _isSignedIn = true;
+          });
+          _buildHomePage();
+          return;
+        }
+      }
       setState(() => _isSignedIn = false);
       _buildHomePage();
       return;
     }
-
     setState(() {
       _signedAccount = accounts.first;
+      _userId = _signedAccount.uuid;
       _fullName = _signedAccount.apiName!;
       _apiEmail = _signedAccount.apiEmail!;
       _apiPhotoUrl = _signedAccount.apiPhotoUrl!;
       _isAdmin = (_signedAccount.userLevel! >= 2);
       _isSignedIn = true;
     });
-
+    _setLastUserId(_signedAccount.uuid);
     _buildHomePage();
+  }
+
+  Future<void> _loadGamesAndUserGames() async {
+    final db = DatabaseService();
+    final games = await db.getGames();
+    final userGames = await db.getUserGames(_userId);
+    setState(() {
+      _games = games;
+      _userGames = {for (var ug in userGames) ug.gameId: ug};
+    });
+  }
+
+  Future<void> _populateAndLoadGames() async {
+    await DatabaseService().populateSampleGames();
+    await _loadGamesAndUserGames();
+  }
+
+  void _onGameTap(Game game) async {
+    final userGame = _userGames[game.id] ?? UserGame(gameId: game.id, userId: _userId);
+    await Navigator.of(context).push(MaterialPageRoute(
+      builder: (context) => GamePage(
+        game: game,
+        rating: userGame.rating,
+        played: userGame.played,
+        onRatingChanged: (newRating) async {
+          final updated = UserGame(gameId: game.id, userId: _userId, rating: newRating, played: userGame.played);
+          await DatabaseService().upsertUserGame(updated);
+          setState(() => _userGames[game.id] = updated);
+        },
+        onPlayedChanged: (newPlayed) async {
+          final updated = UserGame(gameId: game.id, userId: _userId, rating: userGame.rating, played: newPlayed);
+          await DatabaseService().upsertUserGame(updated);
+          setState(() => _userGames[game.id] = updated);
+        },
+      ),
+    ));
+    await _loadGamesAndUserGames();
   }
 
   // system methods
@@ -351,6 +475,110 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return _isLoading ? _loadingScreen : _currentScreen;
+    // Compute average ratings and popularity
+    Map<int, double> avgRatings = {};
+    Map<int, int> playedCounts = {};
+    for (var game in _games) {
+      final userGame = _userGames[game.id];
+      avgRatings[game.id] = userGame?.rating ?? 0;
+      playedCounts[game.id] = userGame?.played == true ? 1 : 0;
+    }
+    final highestRated = List<Game>.from(_games)
+      ..sort((a, b) => (avgRatings[b.id] ?? 0).compareTo(avgRatings[a.id] ?? 0));
+    final popular = List<Game>.from(_games)
+      ..sort((a, b) => (playedCounts[b.id] ?? 0).compareTo(playedCounts[a.id] ?? 0));
+    final other = _games.where((g) => !highestRated.take(5).contains(g) && !popular.take(5).contains(g)).toList();
+
+    final playedGames = _games.where((g) => _userGames[g.id]?.played == true).toList();
+    final ratedGames = _games.where((g) => (_userGames[g.id]?.rating ?? 0) > 0).toList();
+
+    return Scaffold(
+      body: _selectedIndex == 0
+          ? HomePage(
+              games: _games,
+              userGames: _userGames,
+              onGameTap: _onGameTap,
+              onRatingChanged: (game, rating) async {
+                final userGame = _userGames[game.id] ?? UserGame(gameId: game.id, userId: _userId);
+                final updated = UserGame(gameId: game.id, userId: _userId, rating: rating, played: userGame.played);
+                await DatabaseService().upsertUserGame(updated);
+                setState(() => _userGames[game.id] = updated);
+              },
+              onPlayedChanged: (game, played) async {
+                final userGame = _userGames[game.id] ?? UserGame(gameId: game.id, userId: _userId);
+                final updated = UserGame(gameId: game.id, userId: _userId, rating: userGame.rating, played: played);
+                await DatabaseService().upsertUserGame(updated);
+                setState(() => _userGames[game.id] = updated);
+              },
+              highestRated: highestRated.take(5).toList(),
+              popular: popular.take(5).toList(),
+              other: other,
+            )
+          : _selectedIndex == 1
+          ? ProfilePage(
+              playedGames: playedGames,
+              ratedGames: ratedGames,
+              userGames: _userGames,
+              onGameTap: _onGameTap,
+              onRatingChanged: (game, rating) async {
+                final userGame = _userGames[game.id] ?? UserGame(gameId: game.id, userId: _userId);
+                final updated = UserGame(gameId: game.id, userId: _userId, rating: rating, played: userGame.played);
+                await DatabaseService().upsertUserGame(updated);
+                setState(() => _userGames[game.id] = updated);
+              },
+              onPlayedChanged: (game, played) async {
+                final userGame = _userGames[game.id] ?? UserGame(gameId: game.id, userId: _userId);
+                final updated = UserGame(gameId: game.id, userId: _userId, rating: userGame.rating, played: played);
+                await DatabaseService().upsertUserGame(updated);
+                setState(() => _userGames[game.id] = updated);
+              },
+            )
+          : SettingsPage(
+              netImgLg: _netImgLg,
+              apiName: _fullName,
+              apiEmail: _apiEmail,
+              headLine2: _headLine2,
+              body: _body,
+              themeBG: _darkMode ? Colors.black : _themeBG,
+              themeGrey: _themeGrey,
+              themeMain: _themeMain,
+              themeLite: _themeLite,
+              keepScreenOn: _keepScreenOn,
+              useLargeTexts: _useLargeTexts,
+              darkMode: _darkMode,
+              onDarkModeChanged: _setDarkMode,
+              onKeepScreenOnChanged: (newValue) {
+                setState(() {
+                  _keepScreenOn = newValue;
+                });
+                WakelockPlus.toggle(enable: _keepScreenOn);
+              },
+              onUseLargeTextsChanged: (newValue) {
+                setState(() {
+                  _useLargeTexts = newValue;
+                });
+                _rescaleFontSizes();
+              },
+              onSignOutTap: () async {
+                await DatabaseService().clearAccounts();
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.remove('lastUserId');
+                setState(() {
+                  _isSignedIn = false;
+                  _selectedIndex = 0;
+                });
+                SystemNavigator.pop();
+              },
+            ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _selectedIndex,
+        onTap: (i) => setState(() => _selectedIndex = i),
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+          BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'Settings'),
+        ],
+      ),
+    );
   }
 }
