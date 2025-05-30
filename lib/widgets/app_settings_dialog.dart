@@ -32,6 +32,7 @@ class AppSettingsDialog extends StatelessWidget {
     this.onKeepScreenOnChanged,
     this.onUseLargeTextsChanged,
     this.onSignOutTap,
+    this.enlargements,
   });
 
   static const double _dialogBorderRadius = 8.0;
