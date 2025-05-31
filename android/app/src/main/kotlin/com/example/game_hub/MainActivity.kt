@@ -1,4 +1,4 @@
-package com.example.game_hub
+package com.nietzchan.game_hub
 
 import io.flutter.embedding.android.FlutterActivity
 
