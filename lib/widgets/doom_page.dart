@@ -76,7 +76,7 @@ class _DoomPageState extends State<DoomPage> {
 
   Widget _buildSectionTitle(String title) => Padding(
     padding: const EdgeInsets.only(top: 24, bottom: 8),
-    child: Text(title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+    child: Text(title, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: textColor)),
   );
 
   Widget _buildFeatureList(List<String> features) => Column(
@@ -87,7 +87,7 @@ class _DoomPageState extends State<DoomPage> {
         children: [
           const Icon(Icons.check_circle, color: Colors.green, size: 18),
           const SizedBox(width: 8),
-          Expanded(child: Text(f, style: const TextStyle(fontSize: 16))),
+          Expanded(child: Text(f, style: TextStyle(fontSize: 16, color: textColor))),
         ],
       ),
     )).toList(),
@@ -101,7 +101,7 @@ class _DoomPageState extends State<DoomPage> {
         children: [
           const Icon(Icons.videogame_asset, color: Colors.deepPurple, size: 18),
           const SizedBox(width: 8),
-          Expanded(child: Text('${mode['name']}: ${mode['desc']}', style: const TextStyle(fontSize: 16))),
+          Expanded(child: Text('${mode['name']}: ${mode['desc']}', style: TextStyle(fontSize: 16, color: textColor))),
         ],
       ),
     )).toList(),
@@ -129,7 +129,7 @@ class _DoomPageState extends State<DoomPage> {
               ),
             ),
             const SizedBox(height: 20),
-            Text('Doom', style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold)),
+            Text('Doom', style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold, color: textColor)),
             const SizedBox(height: 8),
             Wrap(
               spacing: 16,
@@ -141,8 +141,8 @@ class _DoomPageState extends State<DoomPage> {
               ],
             ),
             _buildSectionTitle('Basic Details'),
-            const Text('''
-• Title: Doom
+            Text(
+'''• Title: Doom
 • Release Date: December 10, 1993
 • Developer: id Software
 • Publisher: GT Interactive
@@ -150,11 +150,13 @@ class _DoomPageState extends State<DoomPage> {
 • Genre: First-Person Shooter
 • Rating: M (Mature)
 • Players: Single-player, Multiplayer
-'''),
+''',
+              style: TextStyle(color: textColor),
+            ),
             _buildSectionTitle('Description'),
-            const Text(
+            Text(
               'Doom is the legendary first-person shooter that defined a genre. As the Doom Slayer, battle your way through hordes of demons on Mars and in Hell using an arsenal of powerful weapons.',
-              style: TextStyle(fontSize: 16),
+              style: TextStyle(fontSize: 16, color: textColor),
             ),
             _buildSectionTitle('Key Features'),
             _buildFeatureList([
