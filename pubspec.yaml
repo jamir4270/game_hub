@@ -40,7 +40,7 @@ flutter:
   assets:
     - assets/images/
   fonts:
-    - family: Barriecito
+    - family: DMSerifText
       fonts:
         - asset: assets/fonts/DMSerifText-Regular.ttf
 

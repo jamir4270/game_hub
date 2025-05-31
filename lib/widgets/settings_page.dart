@@ -1,84 +1,107 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
+import 'package:flutter/services.dart';
 
-class SettingsPage extends StatelessWidget {
-  final Widget? netImgLg;
-  final String? apiName;
-  final String? apiEmail;
-  final double headLine2;
-  final double body;
-  final Color themeBG;
-  final Color themeGrey;
-  final Color themeMain;
-  final Color themeLite;
-  final bool keepScreenOn;
-  final bool useLargeTexts;
-  final bool darkMode;
-  final ValueChanged<bool>? onKeepScreenOnChanged;
-  final ValueChanged<bool>? onUseLargeTextsChanged;
+class SettingsPage extends StatefulWidget {
   final ValueChanged<bool>? onDarkModeChanged;
-  final VoidCallback? onSignOutTap;
+  const SettingsPage({super.key, this.onDarkModeChanged});
 
-  const SettingsPage({
-    super.key,
-    this.netImgLg,
-    this.apiName,
-    this.apiEmail,
-    required this.headLine2,
-    required this.body,
-    required this.themeBG,
-    required this.themeGrey,
-    required this.themeMain,
-    required this.themeLite,
-    required this.keepScreenOn,
-    required this.useLargeTexts,
-    required this.darkMode,
-    this.onKeepScreenOnChanged,
-    this.onUseLargeTextsChanged,
-    this.onDarkModeChanged,
-    this.onSignOutTap,
-  });
+  @override
+  State<SettingsPage> createState() => _SettingsPageState();
+}
 
-  static const EdgeInsets _settingsItemPadding = EdgeInsets.only(left: 24, right: 24, top: 12, bottom: 12);
-  static const TextStyle _settingsItemTextStyle = TextStyle(fontSize: 18.0);
-  static const EdgeInsets _signOutPadding = EdgeInsets.only(left: 24, right: 24, top: 12, bottom: 24);
+class _SettingsPageState extends State<SettingsPage> {
+  bool _darkMode = false;
+  bool _keepScreenOn = false;
+  bool _useLargeTexts = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPrefs();
+  }
+
+  Future<void> _loadPrefs() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _darkMode = prefs.getBool('darkMode') ?? false;
+      _keepScreenOn = prefs.getBool('keepScreenOn') ?? false;
+      _useLargeTexts = prefs.getBool('useLargeTexts') ?? false;
+    });
+    WakelockPlus.toggle(enable: _keepScreenOn);
+  }
+
+  Future<void> _setDarkMode(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('darkMode', value);
+    setState(() {
+      _darkMode = value;
+    });
+    if (widget.onDarkModeChanged != null) {
+      widget.onDarkModeChanged!(value);
+    } else {
+      (context as Element).markNeedsBuild();
+    }
+  }
+
+  Future<void> _setKeepScreenOn(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('keepScreenOn', value);
+    setState(() {
+      _keepScreenOn = value;
+    });
+    WakelockPlus.toggle(enable: value);
+  }
+
+  Future<void> _setUseLargeTexts(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('useLargeTexts', value);
+    setState(() {
+      _useLargeTexts = value;
+    });
+  }
+
+  void _signOut() {
+    SystemNavigator.pop();
+  }
+
+  Color get bgColor => _darkMode ? const Color(0xFF181A20) : const Color(0xFFF5F6FA);
+  Color get cardColor => _darkMode ? const Color(0xFF23262F) : Colors.white;
+  Color get textColor => _darkMode ? Colors.white : Colors.black;
+  Color get subTextColor => _darkMode ? Colors.grey[400]! : Colors.grey[800]!;
+  Color get accentColor => Colors.deepPurple;
 
   @override
   Widget build(BuildContext context) {
+    final double headLine2 = _useLargeTexts ? 34.0 : 22.0;
+    final double body = _useLargeTexts ? 20.0 : 16.0;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Settings'),
-        backgroundColor: themeMain,
+        title: Text('Settings', style: TextStyle(color: textColor)),
+        backgroundColor: accentColor,
+        iconTheme: IconThemeData(color: textColor),
       ),
-      backgroundColor: themeBG,
+      backgroundColor: bgColor,
       body: ListView(
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                netImgLg ?? const SizedBox.shrink(),
-                const SizedBox(width: 12.0),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        apiName ?? '',
-                        style: TextStyle(
-                          fontSize: headLine2,
-                          color: Colors.black,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      Text(
-                        apiEmail ?? '',
-                        style: TextStyle(
-                          fontSize: body,
-                          color: themeGrey,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
+                Text(
+                  'Game Hub',
+                  style: TextStyle(
+                    fontSize: headLine2,
+                    color: textColor,
+                  ),
+                ),
+                Text(
+                  'gamehub@app.com',
+                  style: TextStyle(
+                    fontSize: body,
+                    color: subTextColor,
                   ),
                 ),
               ],
@@ -86,43 +109,43 @@ class SettingsPage extends StatelessWidget {
           ),
           const Divider(thickness: 1.0),
           Padding(
-            padding: _settingsItemPadding,
+            padding: const EdgeInsets.only(left: 24, right: 24, top: 12, bottom: 12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text("Dark mode", style: _settingsItemTextStyle),
+                    Text("Dark mode", style: TextStyle(fontSize: 18.0, color: textColor)),
                     Switch(
-                      value: darkMode,
-                      activeColor: themeMain,
-                      activeTrackColor: themeLite,
-                      onChanged: onDarkModeChanged,
+                      value: _darkMode,
+                      activeColor: accentColor,
+                      activeTrackColor: accentColor.withOpacity(0.2),
+                      onChanged: _setDarkMode,
                     ),
                   ],
                 ),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text("Keep screen on", style: _settingsItemTextStyle),
+                    Text("Keep screen on", style: TextStyle(fontSize: 18.0, color: textColor)),
                     Switch(
-                      value: keepScreenOn,
-                      activeColor: themeMain,
-                      activeTrackColor: themeLite,
-                      onChanged: onKeepScreenOnChanged,
+                      value: _keepScreenOn,
+                      activeColor: accentColor,
+                      activeTrackColor: accentColor.withOpacity(0.2),
+                      onChanged: _setKeepScreenOn,
                     ),
                   ],
                 ),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text("Use large texts", style: _settingsItemTextStyle),
+                    Text("Use large texts", style: TextStyle(fontSize: 18.0, color: textColor)),
                     Switch(
-                      value: useLargeTexts,
-                      activeColor: themeMain,
-                      activeTrackColor: themeLite,
-                      onChanged: onUseLargeTextsChanged,
+                      value: _useLargeTexts,
+                      activeColor: accentColor,
+                      activeTrackColor: accentColor.withOpacity(0.2),
+                      onChanged: _setUseLargeTexts,
                     ),
                   ],
                 ),
@@ -130,14 +153,16 @@ class SettingsPage extends StatelessWidget {
             ),
           ),
           const Divider(thickness: 1.0),
-          InkWell(
-            onTap: onSignOutTap,
-            child: Padding(
-              padding: _signOutPadding,
-              child: const Text(
-                "Sign out",
-                style: _settingsItemTextStyle,
+          Padding(
+            padding: const EdgeInsets.only(left: 24, right: 24, top: 12, bottom: 24),
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: accentColor,
+                foregroundColor: textColor,
+                minimumSize: const Size.fromHeight(48),
               ),
+              onPressed: _signOut,
+              child: Text('Sign out', style: TextStyle(color: textColor)),
             ),
           ),
         ],

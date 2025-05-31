@@ -1,43 +1,78 @@
 import 'package:flutter/material.dart';
 import 'package:marquee/marquee.dart';
-import '../models/game.dart';
-import '../models/user_game.dart';
+import 'doom_page.dart';
+import 'starcraft_page.dart';
+import 'gearsofwar_page.dart';
+import 'farcry_page.dart';
+import 'worldofwarcraft_page.dart';
+import 'baldursgate2_page.dart';
+import 'diablo_page.dart';
+import 'terraria_page.dart';
+import 'killzone2_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-class HomePage extends StatelessWidget {
-  final List<Game> games;
-  final Map<int, UserGame> userGames;
-  final void Function(Game) onGameTap;
-  final void Function(Game, double) onRatingChanged;
-  final void Function(Game, bool) onPlayedChanged;
-  final List<Game> highestRated;
-  final List<Game> popular;
-  final List<Game> other;
+class StaticGame {
+  final String title;
+  final String imageUrl;
+  final List<String> tags;
+  final Widget page;
+  const StaticGame({required this.title, required this.imageUrl, required this.tags, required this.page});
+}
 
-  const HomePage({
-    super.key,
-    required this.games,
-    required this.userGames,
-    required this.onGameTap,
-    required this.onRatingChanged,
-    required this.onPlayedChanged,
-    required this.highestRated,
-    required this.popular,
-    required this.other,
-  });
+final List<StaticGame> allGames = [
+  StaticGame(title: 'Doom', imageUrl: 'assets/images/doom_card.jpg', tags: ['Shooter', 'Classic'], page: const DoomPage()),
+  StaticGame(title: 'Starcraft', imageUrl: 'assets/images/starcraft_card.jpg', tags: ['Strategy', 'RTS'], page: const StarcraftPage()),
+  StaticGame(title: 'Gears of War', imageUrl: 'assets/images/gearsofwar_card.jpg', tags: ['Shooter', 'Action'], page: const GearsOfWarPage()),
+  StaticGame(title: 'Far Cry', imageUrl: 'assets/images/farcry_card.jpg', tags: ['Shooter', 'Open World'], page: const FarCryPage()),
+  StaticGame(title: 'World of Warcraft', imageUrl: 'assets/images/worldofwarcraft_card.jpg', tags: ['MMORPG', 'Fantasy'], page: const WorldOfWarcraftPage()),
+  StaticGame(title: "Baldur's Gate 2", imageUrl: 'assets/images/baldursgate2_card.jpg', tags: ['RPG', 'Fantasy'], page: const BaldursGate2Page()),
+  StaticGame(title: 'Diablo', imageUrl: 'assets/images/diablo_card.jpg', tags: ['RPG', 'Action'], page: const DiabloPage()),
+  StaticGame(title: 'Terraria', imageUrl: 'assets/images/terraria_card.jpg', tags: ['Sandbox', 'Adventure'], page: const TerrariaPage()),
+  StaticGame(title: 'Killzone 2', imageUrl: 'assets/images/killzone2_card.jpg', tags: ['Shooter', 'Futuristic'], page: const Killzone2Page()),
+];
 
-  // For demo: first 5 as trending, next 4 as saved
-  List<Game> get trendingGames => games.take(5).toList();
-  List<Game> get savedGames => games.skip(5).take(4).toList();
+class HomePage extends StatefulWidget {
+  const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  bool _darkMode = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDarkMode();
+  }
+
+  Future<void> _loadDarkMode() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _darkMode = prefs.getBool('darkMode') ?? false;
+    });
+  }
+
+  Color get bgColor => _darkMode ? const Color(0xFF181A20) : const Color(0xFFF5F6FA);
+  Color get cardColor => _darkMode ? const Color(0xFF23262F) : Colors.white;
+  Color get textColor => _darkMode ? Colors.white : Colors.black;
+  Color get subTextColor => _darkMode ? Colors.grey[400]! : Colors.grey[800]!;
+  Color get accentColor => Colors.deepPurple;
+
+  List<StaticGame> get trendingGames => allGames.take(5).toList();
+  List<StaticGame> get savedGames => allGames.skip(5).take(4).toList();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: bgColor,
       appBar: AppBar(
-        title: const Text('Game Hub'),
-        backgroundColor: Colors.deepPurple,
+        title: Text('Game Hub', style: TextStyle(color: textColor)),
+        backgroundColor: accentColor,
+        iconTheme: IconThemeData(color: textColor),
         elevation: 0,
       ),
-      backgroundColor: const Color(0xFFF5F6FA),
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
@@ -49,9 +84,7 @@ class HomePage extends StatelessWidget {
                   width: double.infinity,
                   height: 36,
                   decoration: BoxDecoration(
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.grey.shade800
-                        : Colors.blue.shade50,
+                    color: _darkMode ? Colors.grey.shade800 : Colors.blue.shade50,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -60,7 +93,7 @@ class HomePage extends StatelessWidget {
                         "Did you know that the first video game Easter egg appeared in Adventure for the Atari 2600 in 1980, hidden by a developer who wasn't credited? Or that Mario was originally called 'Jumpman' in Donkey Kong, and his iconic mustache was added due to pixel limitations? Halo 2 had a hidden message from a developer proposing to his girlfriend, and The Legend of Zelda: Ocarina of Time uses reversed dog barks as some enemy sound effects. Minecraft was almost called Cave Game, and its world is so vast that it's practically infinite — if you walked to the edge, the game would start glitching. In Pokémon Red and Blue, there's a myth that beating the game 100 times unlocks Pikablu, a non-existent Pokémon fans speculated about for years. Pac-Man was inspired by a pizza with a slice missing, and the original Tetris was coded by a Russian scientist during the Cold War, using text characters because he didn't have graphics capabilities. Meanwhile, in Metal Gear Solid 3, saving the game during a boss fight and returning a week later causes the elderly boss to die of old age! Even crazier, there's a playable version of Galaga inside Tekken 3. Video game history is packed with quirky surprises, hidden tributes, and creative hacks that make the gaming world endlessly fascinating.",
                     style: TextStyle(
                       fontSize: 14,
-                      color: Theme.of(context).textTheme.bodyMedium?.color,
+                      color: textColor,
                     ),
                     blankSpace: 60.0,
                     velocity: 40.0,
@@ -69,9 +102,9 @@ class HomePage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 32),
-                const Text(
+                Text(
                   'Saved Games',
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600),
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600, color: textColor),
                 ),
                 const SizedBox(height: 16),
                 SizedBox(
@@ -83,7 +116,9 @@ class HomePage extends StatelessWidget {
                     itemBuilder: (context, index) {
                       final game = savedGames[index];
                       return InkWell(
-                        onTap: () => onGameTap(game),
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => game.page),
+                        ),
                         child: SizedBox(
                           width: 140,
                           child: Column(
@@ -105,11 +140,11 @@ class HomePage extends StatelessWidget {
                               ),
                               const SizedBox(height: 8),
                               Text(
-                                game.name,
+                                game.title,
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w600,
-                                  color: Theme.of(context).textTheme.bodyLarge?.color,
+                                  color: textColor,
                                 ),
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
@@ -141,7 +176,7 @@ class HomePage extends StatelessWidget {
                   'Discover trending games and manage your collection.',
                   style: TextStyle(
                     fontSize: 16,
-                    color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.7),
+                    color: subTextColor,
                   ),
                 ),
                 const SizedBox(height: 32),
@@ -159,7 +194,9 @@ class HomePage extends StatelessWidget {
                     itemBuilder: (context, index) {
                       final game = trendingGames[index];
                       return InkWell(
-                        onTap: () => onGameTap(game),
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => game.page),
+                        ),
                         child: SizedBox(
                           width: 140,
                           child: Column(
@@ -181,11 +218,11 @@ class HomePage extends StatelessWidget {
                               ),
                               const SizedBox(height: 8),
                               Text(
-                                game.name,
+                                game.title,
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w600,
-                                  color: Theme.of(context).textTheme.bodyLarge?.color,
+                                  color: textColor,
                                 ),
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,

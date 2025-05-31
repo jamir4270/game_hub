@@ -46,7 +46,7 @@ class _RootScreenState extends State<RootScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoggedIn) {
-      return const MyHomePage(title: 'Game Hub');
+      return const MyHomePage();
     }
     return AuthenticationScreen(
       onSignedIn: _onLoginSuccess,

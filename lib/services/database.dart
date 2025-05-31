@@ -149,7 +149,7 @@ class DatabaseService {
         id: 2,
         name: 'Starcraft',
         description: 'Legendary real-time strategy game.',
-        imageUrl: 'assets/images/starrcraft_card.jpg',
+        imageUrl: 'assets/images/starcraft_card.jpg',
         tags: ['Strategy', 'RTS'],
         dateReleased: '1998-03-31',
         company: 'Blizzard Entertainment',

@@ -437,7 +437,7 @@ class _GamePageState extends State<GamePage> {
           style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
-        ...features.map(_buildFeatureItem).toList(),
+        ...features.map(_buildFeatureItem),
       ],
     );
   }
@@ -452,7 +452,7 @@ class _GamePageState extends State<GamePage> {
           style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
-        ...modes.map((m) => _buildModeCard(m.title, m.description)).toList(),
+        ...modes.map((m) => _buildModeCard(m.title, m.description)),
       ],
     );
   }

@@ -1,46 +1,83 @@
 import 'package:flutter/material.dart';
-import '../models/game.dart';
-import '../models/user_game.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'home_page.dart';
 
-class ProfilePage extends StatelessWidget {
-  final List<Game> playedGames;
-  final List<Game> ratedGames;
-  final Map<int, UserGame> userGames;
-  final void Function(Game) onGameTap;
-  final void Function(Game, double) onRatingChanged;
-  final void Function(Game, bool) onPlayedChanged;
+class ProfilePage extends StatefulWidget {
+  const ProfilePage({super.key});
 
-  const ProfilePage({
-    super.key,
-    required this.playedGames,
-    required this.ratedGames,
-    required this.userGames,
-    required this.onGameTap,
-    required this.onRatingChanged,
-    required this.onPlayedChanged,
-  });
+  @override
+  State<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
+  List<StaticGame> playedGames = [];
+  List<StaticGame> ratedGames = [];
+  Map<String, double> ratings = {};
+  Map<String, bool> favorites = {};
+  bool _darkMode = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPrefs();
+    _loadDarkMode();
+  }
+
+  Future<void> _loadPrefs() async {
+    final prefs = await SharedPreferences.getInstance();
+    List<StaticGame> played = [];
+    List<StaticGame> rated = [];
+    Map<String, double> r = {};
+    Map<String, bool> f = {};
+    for (final game in allGames) {
+      final key = _keyFromTitle(game.title);
+      final rating = prefs.getDouble('${key}_rating') ?? 0;
+      final favorite = prefs.getBool('${key}_favorite') ?? false;
+      r[game.title] = rating;
+      f[game.title] = favorite;
+      if (favorite) played.add(game);
+      if (rating > 0) rated.add(game);
+    }
+    setState(() {
+      playedGames = played;
+      ratedGames = rated;
+      ratings = r;
+      favorites = f;
+    });
+  }
+
+  Future<void> _loadDarkMode() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _darkMode = prefs.getBool('darkMode') ?? false;
+    });
+  }
+
+  String _keyFromTitle(String title) {
+    return title.toLowerCase().replaceAll("'", '').replaceAll(' ', '');
+  }
+
+  Color get bgColor => _darkMode ? const Color(0xFF181A20) : const Color(0xFFF5F6FA);
+  Color get cardColor => _darkMode ? const Color(0xFF23262F) : Colors.white;
+  Color get textColor => _darkMode ? Colors.white : Colors.black;
+  Color get subTextColor => _darkMode ? Colors.grey[400]! : Colors.grey[800]!;
+  Color get accentColor => Colors.deepPurple;
 
   @override
   Widget build(BuildContext context) {
-    final Color cardColor = Theme.of(context).brightness == Brightness.dark
-        ? Colors.grey.shade900
-        : Colors.white;
-    final Color textColor = Theme.of(context).brightness == Brightness.dark
-        ? Colors.white
-        : Colors.black;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Your Profile'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
+        title: Text('Your Profile', style: TextStyle(color: textColor)),
+        backgroundColor: accentColor,
+        iconTheme: IconThemeData(color: textColor),
         elevation: 0,
       ),
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 8.0),
-            child: Text('Played Games', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22)),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
+            child: Text('Played Games', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22, color: textColor)),
           ),
           SizedBox(
             height: 180,
@@ -50,9 +87,12 @@ class ProfilePage extends StatelessWidget {
               separatorBuilder: (context, index) => const SizedBox(width: 16),
               itemBuilder: (context, index) {
                 final game = playedGames[index];
-                final userGame = userGames[game.id] ?? UserGame(gameId: game.id, userId: '');
+                final rating = ratings[game.title] ?? 0;
+                final favorite = favorites[game.title] ?? false;
                 return InkWell(
-                  onTap: () => onGameTap(game),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => game.page),
+                  ),
                   child: SizedBox(
                     width: 140,
                     child: Column(
@@ -74,7 +114,7 @@ class ProfilePage extends StatelessWidget {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          game.name,
+                          game.title,
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
@@ -87,14 +127,14 @@ class ProfilePage extends StatelessWidget {
                         Row(
                           children: [
                             ...List.generate(5, (i) => Icon(
-                                  i < userGame.rating ? Icons.star : Icons.star_border,
+                                  i < rating ? Icons.star : Icons.star_border,
                                   color: Colors.amber,
                                   size: 18,
                                 )),
                             const SizedBox(width: 4),
                             Icon(
-                              userGame.played ? Icons.favorite : Icons.favorite_border,
-                              color: userGame.played ? Colors.red : Colors.grey,
+                              favorite ? Icons.favorite : Icons.favorite_border,
+                              color: favorite ? Colors.red : Colors.grey,
                               size: 18,
                             ),
                           ],
@@ -106,9 +146,9 @@ class ProfilePage extends StatelessWidget {
               },
             ),
           ),
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 8.0),
-            child: Text('Rated Games', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22)),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
+            child: Text('Rated Games', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22, color: textColor)),
           ),
           SizedBox(
             height: 180,
@@ -118,9 +158,12 @@ class ProfilePage extends StatelessWidget {
               separatorBuilder: (context, index) => const SizedBox(width: 16),
               itemBuilder: (context, index) {
                 final game = ratedGames[index];
-                final userGame = userGames[game.id] ?? UserGame(gameId: game.id, userId: '');
+                final rating = ratings[game.title] ?? 0;
+                final favorite = favorites[game.title] ?? false;
                 return InkWell(
-                  onTap: () => onGameTap(game),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => game.page),
+                  ),
                   child: SizedBox(
                     width: 140,
                     child: Column(
@@ -142,7 +185,7 @@ class ProfilePage extends StatelessWidget {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          game.name,
+                          game.title,
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
@@ -155,14 +198,14 @@ class ProfilePage extends StatelessWidget {
                         Row(
                           children: [
                             ...List.generate(5, (i) => Icon(
-                                  i < userGame.rating ? Icons.star : Icons.star_border,
+                                  i < rating ? Icons.star : Icons.star_border,
                                   color: Colors.amber,
                                   size: 18,
                                 )),
                             const SizedBox(width: 4),
                             Icon(
-                              userGame.played ? Icons.favorite : Icons.favorite_border,
-                              color: userGame.played ? Colors.red : Colors.grey,
+                              favorite ? Icons.favorite : Icons.favorite_border,
+                              color: favorite ? Colors.red : Colors.grey,
                               size: 18,
                             ),
                           ],
