@@ -1,0 +1,10 @@
+#signingConfigs {
+#        create("release") {
+#            keyAlias = "key"
+#            keyPassword = "ederlezi"
+#            storeFile = file("key.jks")
+#            storePassword = "ederlezi"
+#        }
+#    }
+
+#incase asked for a code before pushing the code is = oasis
