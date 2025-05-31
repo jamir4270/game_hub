@@ -167,9 +167,9 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   'Welcome to your GameHub!',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: textColor),
                 ),
                 const SizedBox(height: 10),
                 Text(
@@ -180,9 +180,9 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
                 const SizedBox(height: 32),
-                const Text(
+                Text(
                   'Trending Games',
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600),
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w600, color: textColor),
                 ),
                 const SizedBox(height: 16),
                 SizedBox(
