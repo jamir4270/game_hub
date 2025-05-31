@@ -116,7 +116,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text("Dark mode", style: TextStyle(fontSize: 18.0, color: textColor)),
+                    Text("Dark mode (in development)", style: TextStyle(fontSize: 18.0, color: textColor)),
                     Switch(
                       value: _darkMode,
                       activeColor: accentColor,
