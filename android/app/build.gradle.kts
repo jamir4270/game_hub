@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.game_hub"
+    namespace = "com.nietzchan.game_hub"
     ndkVersion = "25.1.8937393"
     compileSdk = 35
 
@@ -20,7 +20,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.game_hub"
+        applicationId = "com.nietzchan.game_hub"
         minSdk = 23
         targetSdk = 35
         versionCode = 1
